@@ -3,7 +3,6 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
-    <OutDir>$(ProjectDir)../</OutDir>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup>
@@ -12,11 +11,9 @@
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <AdditionalOptions>/bigobj%(AdditionalOptions)</AdditionalOptions>
+      <ObjectFileName>$(IntDir)\obj_d\</ObjectFileName>
     </ClCompile>
-    <Link>
-      <AdditionalDependencies>$(OTCLIENT_LIBDEPS_D)</AdditionalDependencies>
-    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>
+

@@ -1,49 +1,43 @@
-FROM ubuntu@sha256:b88f8848e9a1a4e4558ba7cfc4acc5879e1d0e7ac06401409062ad2627e6fb58 AS builder
+FROM alpine:edge AS build
+# crypto++-dev is in edge/testing
+RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ \
+  binutils \
+  boost-dev \
+  build-base \
+  clang \
+  cmake \
+  crypto++-dev \
+  gcc \
+  gmp-dev \
+  luajit-dev \
+  make \
+  mariadb-connector-c-dev \
+  pugixml-dev
 
-RUN apt-get update; \
-  apt-get install -y \
-    build-essential \
-    cmake \
-    git-core \
-    libboost-atomic1.65-dev \
-    libboost-chrono1.65-dev \
-    libboost-date-time1.65-dev \
-    libboost-filesystem1.65-dev \
-    libboost-system1.65-dev \
-    libboost-thread1.65-dev \
-    libglew-dev \
-    liblua5.1-0-dev \
-    libncurses5-dev \
-    libopenal-dev \
-    libssl-dev \
-    libvorbis-dev \
-    mercurial \
-    zlib1g-dev; \
-  apt-get clean && apt-get autoclean
+COPY cmake /usr/src/forgottenserver/cmake/
+COPY src /usr/src/forgottenserver/src/
+COPY CMakeLists.txt /usr/src/forgottenserver/
+WORKDIR /usr/src/forgottenserver/build
+RUN cmake .. && make
 
-WORKDIR /
-RUN hg clone -r stable-3.0 http://hg.icculus.org/icculus/physfs/
-WORKDIR /physfs/build/
-RUN cmake ..
-RUN make -j$(nproc)
-RUN make install
+FROM alpine:edge
+# crypto++-dev is in edge/testing
+RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ \
+  boost-iostreams \
+  boost-system \
+  boost-filesystem \
+  crypto++ \
+  gmp \
+  luajit \
+  mariadb-connector-c \
+  pugixml
 
-COPY ./src/ /otclient/src/.
-COPY CMakeLists.txt /otclient/.
-WORKDIR /otclient/build/
-RUN cmake -DCMAKE_CXX_LINK_FLAGS=-no-pie -DCMAKE_BUILD_TYPE=Release ..
-RUN make -j$(nproc)
+RUN ln -s /usr/lib/libcryptopp.so /usr/lib/libcryptopp.so.5.6
+COPY --from=build /usr/src/forgottenserver/build/tfs /bin/tfs
+COPY data /srv/data/
+COPY LICENSE README.md *.dist *.sql key.pem /srv/
 
-FROM ubuntu@sha256:b88f8848e9a1a4e4558ba7cfc4acc5879e1d0e7ac06401409062ad2627e6fb58
-RUN apt-get update; \
-  apt-get install -y \
-    libglew2.0 \
-    libopenal1; \
-  apt-get clean && apt-get autoclean
-COPY --from=builder /otclient/build/otclient /otclient/bin/otclient
-COPY ./data/ /otclient/data/.
-COPY ./mods/ /otclient/mods/.
-COPY ./modules/ /otclient/modules/.
-COPY ./init.lua /otclient/.
-WORKDIR /otclient
-CMD ["./bin/otclient"]
+EXPOSE 7171 7172
+WORKDIR /srv
+VOLUME /srv
+ENTRYPOINT ["/bin/tfs"]
